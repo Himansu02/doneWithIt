@@ -10,35 +10,39 @@ import { db } from "../Firebase";
 
 const ListingScreen = ({ navigation }) => {
   const [listings, setListings] = useState([]);
-  const [loading,setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  const getListings = async () => {
+    setLoading(true);
+    const querySnapshot = await getDocs(collection(db, "listings"));
+    if (!querySnapshot.empty) {
+      const result = [];
+      querySnapshot.forEach((doc) => {
+        result.push({ ...doc.data(), id: doc.id });
+      });
+
+      setListings(result);
+
+      cache.store("listing", result);
+    } else {
+      const data = cache.get("listing");
+      setListings(data);
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const getListings = async () => {
-      setLoading(true)
-      const querySnapshot = await getDocs(collection(db, "listings"));
-      if (!querySnapshot.empty) {
-        const result=[]
-        querySnapshot.forEach((doc) => {
-          result.push({...doc.data(),id:doc.id})
-        });
-
-        setListings(result)
-
-        cache.store("listing", result);
-      } else {
-        const data = cache.get("listing");
-        setListings(data);
-      }
-      setLoading(false)
-    };
     getListings();
   }, []);
 
+  const handleRefresh = async () => {
+    getListings()
+  };
 
   return (
     <View style={styles.container}>
-      {loading && <ActivityIndicator size="large" animating={loading}/>}
+      {loading && <ActivityIndicator size="large" animating={loading} />}
       <FlatList
         data={listings}
         keyExtractor={(item) => item.id}
@@ -51,7 +55,7 @@ const ListingScreen = ({ navigation }) => {
           />
         )}
         refreshing={refreshing}
-        onRefresh={()=>console.log()}
+        onRefresh={handleRefresh}
       />
     </View>
   );
